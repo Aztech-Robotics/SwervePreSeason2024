@@ -11,6 +11,7 @@ import frc.lib.swerve.ChassisSpeeds;
 import frc.lib.swerve.ModuleState;
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants;
+import frc.robot.Telemetry;
 import frc.robot.Constants.SwerveModules;
 import frc.robot.Constants.Drive.DriveControlMode;
 
@@ -28,6 +29,7 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD2, 2),
       new SwerveModule(SwerveModules.MOD3, 3)
     };
+    outputTelemetry();
     for (SwerveModule module : swerveModules){
       module.outputTelemetry();
     }
@@ -88,13 +90,13 @@ public class Drive extends SubsystemBase {
     writePeriodicOutputs();
   }
 
-  public void setModulesStates (ModuleState[] modulesStates) {
+  private void setModulesStates (ModuleState[] modulesStates) {
     for (int i = 0; i < swerveModules.length; i++) {
       swerveModules[i].setModuleState(modulesStates[i], mPeriodicIO.driveControlMode);
     }
   }
 
-  public ModuleState[] getModulesStates () {
+  private ModuleState[] getModulesStates () {
     ModuleState[] moduleStates = new ModuleState[4]; 
     for (int i = 0; i < 4; i++){
       moduleStates[i] = swerveModules[i].getModuleState();
@@ -113,5 +115,9 @@ public class Drive extends SubsystemBase {
         DriveControlMode.Velocity : DriveControlMode.PercentOutput; 
       }
     ); 
+  }
+
+  public void outputTelemetry (){
+    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees());
   }
 }

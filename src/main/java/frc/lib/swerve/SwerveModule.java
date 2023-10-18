@@ -182,8 +182,8 @@ public class SwerveModule {
 
     public void outputTelemetry (){
         ShuffleboardLayout motorsData = Telemetry.swerveTab.getLayout("Module " + moduleNumber, BuiltInLayouts.kList).withSize(2, 3);
-        motorsData.addDouble("Angle", () -> {return mPeriodicIO.currentAngle.getDegrees();});
-        motorsData.addDouble("Velocity", ()->{return mPeriodicIO.velocity;});
-        motorsData.addDouble("Position", () -> {return mPeriodicIO.drivePosition;}); 
+        motorsData.addDouble("Angle", () -> mPeriodicIO.currentAngle.getDegrees());
+        motorsData.addDouble("Velocity", ()-> mPeriodicIO.velocity);
+        motorsData.addDouble("Position", () -> mPeriodicIO.drivePosition); 
     }
 }
