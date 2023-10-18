@@ -46,6 +46,7 @@ public class Drive extends SubsystemBase {
     //Inputs
     double timestamp = 0; 
     Rotation2d yawAngle = new Rotation2d(); 
+    double yaw_velocity = 0; 
     ModuleState[] meas_module_states = new ModuleState [] {
       new ModuleState(),
       new ModuleState(),
@@ -69,6 +70,9 @@ public class Drive extends SubsystemBase {
     StatusSignal<Double> yawAngle = pigeon.getYaw(); 
     yawAngle.refresh();
     mPeriodicIO.yawAngle = Rotation2d.fromDegrees(yawAngle.getValue()); 
+    StatusSignal<Double> yawVel = pigeon.getAngularVelocityZ(); 
+    yawVel.refresh(); 
+    mPeriodicIO.yaw_velocity = yawVel.getValue(); 
     for (SwerveModule module : swerveModules) {
       module.readPeriodicInputs();
     }
@@ -118,6 +122,7 @@ public class Drive extends SubsystemBase {
   }
 
   public void outputTelemetry (){
-    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees());
+    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees()); 
+    Telemetry.swerveTab.addDouble("Yaw Angular Velocity", () -> mPeriodicIO.yaw_velocity);
   }
 }
