@@ -1,11 +1,26 @@
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
+import frc.lib.swerve.SwerveDriveKinematics;
 import frc.lib.swerve.SwerveModule.SwerveModuleConstants;
 
 public final class Constants {
     public static class Drive {
         public static final int id_pigeon = 13;
+        public static final double track_width = Units.inchesToMeters(25); 
+        public static final double wheel_base = Units.inchesToMeters(25); 
+        public static final SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
+            new Translation2d(wheel_base / 2.0, track_width / 2.0),
+            new Translation2d(wheel_base / 2.0, -track_width / 2.0),
+            new Translation2d(-wheel_base / 2.0, track_width / 2.0),
+            new Translation2d(-wheel_base / 2.0, -track_width / 2.0)
+        );
+
+        public enum DriveControlMode {
+            Velocity,
+            PercentOutput
+        }
     }
     public static class SwerveModules {
         public static final double steering_gear_ratio = 12.8; 

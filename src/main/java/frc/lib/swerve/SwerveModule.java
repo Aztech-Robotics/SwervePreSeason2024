@@ -1,7 +1,5 @@
 package frc.lib.swerve;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -30,6 +28,7 @@ import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import frc.robot.Constants;
 import frc.robot.Telemetry;
+import frc.robot.Constants.Drive.DriveControlMode;
 
 public class SwerveModule {
     private final int moduleNumber;
@@ -41,7 +40,7 @@ public class SwerveModule {
     private SparkMaxPIDController drivePIDController;
 
     private PeriodicIO mPeriodicIO = new PeriodicIO(); 
-    private ModuleState targetModuleState = ModuleState.fromSpeeds(new Rotation2d(), 0); 
+    private ModuleState targetModuleState; 
     
     public SwerveModule (SwerveModuleConstants moduleConstants, int moduleNumber){
         this.moduleNumber = moduleNumber; 
@@ -117,11 +116,6 @@ public class SwerveModule {
         }
     }
 
-    public enum DriveControlMode {
-        Velocity,
-        PercentOutput
-    }
-
     public void readPeriodicInputs (){
         mPeriodicIO.timestamp = Timer.getFPGATimestamp(); 
         StatusSignal<Double> absPosCancoder = mCANcoder.getAbsolutePosition(); 
@@ -132,10 +126,12 @@ public class SwerveModule {
     }
 
     public void writePeriodicOutputs (){
+        if (targetModuleState == null) {
+            return;
+        }
         double targetAngle = targetModuleState.angle.getDegrees();
         double currentAngle = mPeriodicIO.currentAngle.getDegrees();
         double targetVelocity = targetModuleState.speedMetersPerSecond; 
-        
         if (targetAngle < 0) {
             targetAngle += 360;
         }
@@ -145,7 +141,7 @@ public class SwerveModule {
             targetVelocity = -targetVelocity; 
         } 
         mPeriodicIO.rotationDemand = targetAngleRot.getRotations();
-        mSteerMotor.setControl(new PositionDutyCycle(mPeriodicIO.rotationDemand, false, 0, 0, true));
+        mSteerMotor.setControl(new PositionDutyCycle(mPeriodicIO.rotationDemand));
         if (mPeriodicIO.controlMode == DriveControlMode.Velocity){
             mPeriodicIO.driveDemand = Constants.SwerveModules.driveMPSToRPM(targetVelocity); 
             drivePIDController.setReference(mPeriodicIO.driveDemand, ControlType.kVelocity, 0, 0);
@@ -159,8 +155,9 @@ public class SwerveModule {
         driveMotorEncoder.setPosition(0);
     }
 
-    public void setModuleState (ModuleState desiredModuleState) {
+    public void setModuleState (ModuleState desiredModuleState, DriveControlMode controlMode) {
         targetModuleState = desiredModuleState; 
+        mPeriodicIO.controlMode = mPeriodicIO.controlMode != controlMode ? controlMode : mPeriodicIO.controlMode; 
     }
 
     public ModuleState getModuleState (){
@@ -177,6 +174,10 @@ public class SwerveModule {
             mDriveMotor.setIdleMode(IdleMode.kCoast);
         }
         mSteerMotor.getConfigurator().apply(neutralMode);
+    }
+
+    public void setDriveControlMode (DriveControlMode mode){
+        mPeriodicIO.controlMode = DriveControlMode.PercentOutput; 
     }
 
     public void outputTelemetry (){
