@@ -12,7 +12,9 @@ public class DriveControl extends CommandBase {
   private DoubleSupplier xControl = ControlBoard.getLeftXC0(); 
   private DoubleSupplier yControl = ControlBoard.getLeftYC0();
   private DoubleSupplier thetaControl = ControlBoard.getRightXC0(); 
-  public DriveControl() {}
+  public DriveControl() {
+    addRequirements(mDrive);
+  }
 
   @Override
   public void initialize() {}

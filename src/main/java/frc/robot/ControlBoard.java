@@ -6,7 +6,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.XboxController;
 
 public class ControlBoard {
-    public static final XboxController driver = new XboxController(0);
+    public static final XboxController driver = new XboxController(0); 
 
     public static DoubleSupplier getLeftYC0 () {
         return () -> MathUtil.applyDeadband(driver.getLeftY(), 0.2);

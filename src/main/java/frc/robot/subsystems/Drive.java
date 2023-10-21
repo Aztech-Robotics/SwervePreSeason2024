@@ -122,7 +122,7 @@ public class Drive extends SubsystemBase {
   }
 
   public void outputTelemetry (){
-    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees()); 
-    Telemetry.swerveTab.addDouble("Yaw Angular Velocity", () -> mPeriodicIO.yaw_velocity);
+    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees()).withPosition(8, 0); 
+    Telemetry.swerveTab.addDouble("Yaw Angular Velocity", () -> mPeriodicIO.yaw_velocity).withPosition(9, 0);
   }
 }

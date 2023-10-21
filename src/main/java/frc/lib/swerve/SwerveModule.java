@@ -1,20 +1,18 @@
 package frc.lib.swerve;
 
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
-import com.ctre.phoenix6.configs.MagnetSensorConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
@@ -67,6 +65,8 @@ public class SwerveModule {
         slot0Configs.kV = Constants.SwerveModules.steer_kV; 
         //DriveMotor Config
         driveMotorEncoder = mDriveMotor.getEncoder();
+        driveMotorEncoder.setPositionConversionFactor(1);
+        driveMotorEncoder.setVelocityConversionFactor(1);
         drivePIDController = mDriveMotor.getPIDController(); 
         mDriveMotor.enableVoltageCompensation(12); 
         mDriveMotor.setSmartCurrentLimit(40); 
@@ -74,20 +74,19 @@ public class SwerveModule {
         drivePIDController.setI(Constants.SwerveModules.drive_kI, 0);
         drivePIDController.setD(Constants.SwerveModules.drive_kD, 0);
         drivePIDController.setFF(Constants.SwerveModules.drive_kFF, 0); 
-        //CANcoder Config
-        MagnetSensorConfigs cancoderConfigs = new MagnetSensorConfigs(); 
-        cancoderConfigs.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1; 
-        cancoderConfigs.MagnetOffset = moduleConstants.angleOffset; 
-        cancoderConfigs.SensorDirection = SensorDirectionValue.Clockwise_Positive; 
-
-        mDriveMotor.burnFlash();
-        mCANcoder.getConfigurator().apply(cancoderConfigs, 100); 
         TalonFXConfiguration gral_config = new TalonFXConfiguration();
         gral_config.ClosedLoopGeneral = closedLoopConfigs;
         gral_config.CurrentLimits = currentLimitsConfigs;
         gral_config.Feedback = feedbackConfigs;
         gral_config.Slot0 = slot0Configs; 
+        //CANcoder Config
+        CANcoderConfiguration cancoderConfigs = new CANcoderConfiguration();
+        cancoderConfigs.MagnetSensor.MagnetOffset = Rotation2d.fromDegrees(360 - moduleConstants.angleOffset).getRotations(); 
+        //Configs Update 
+        mCANcoder.getConfigurator().apply(cancoderConfigs);
         mSteerMotor.getConfigurator().apply(gral_config); 
+        mDriveMotor.burnFlash();
+        setNeutralMode(true);
     }
 
     public static class PeriodicIO {
@@ -121,8 +120,8 @@ public class SwerveModule {
         StatusSignal<Double> absPosCancoder = mCANcoder.getAbsolutePosition(); 
         absPosCancoder.refresh(); 
         mPeriodicIO.currentAngle = Rotation2d.fromRotations(absPosCancoder.getValue());
-        mPeriodicIO.velocity = Constants.SwerveModules.driveRPMToMPS(driveMotorEncoder.getVelocity());
-        mPeriodicIO.drivePosition = Constants.SwerveModules.driveRotToMeters(driveMotorEncoder.getPosition()); 
+        mPeriodicIO.velocity = driveMotorEncoder.getVelocity();
+        mPeriodicIO.drivePosition = driveMotorEncoder.getPosition(); 
     }
 
     public void writePeriodicOutputs (){
@@ -181,7 +180,8 @@ public class SwerveModule {
     }
 
     public void outputTelemetry (){
-        ShuffleboardLayout motorsData = Telemetry.swerveTab.getLayout("Module " + moduleNumber, BuiltInLayouts.kList).withSize(2, 3);
+        ShuffleboardLayout motorsData = Telemetry.swerveTab.getLayout("Module " + moduleNumber, BuiltInLayouts.kList)
+        .withSize(2, 3).withPosition(2 * moduleNumber, 0);
         motorsData.addDouble("Angle", () -> mPeriodicIO.currentAngle.getDegrees());
         motorsData.addDouble("Velocity", ()-> mPeriodicIO.velocity);
         motorsData.addDouble("Position", () -> mPeriodicIO.drivePosition); 
