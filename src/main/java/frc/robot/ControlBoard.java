@@ -9,7 +9,7 @@ public class ControlBoard {
     public static final XboxController driver = new XboxController(0); 
 
     public static DoubleSupplier getLeftYC0 () {
-        return () -> MathUtil.applyDeadband(driver.getLeftY(), 0.2);
+        return () -> MathUtil.applyDeadband(-driver.getLeftY(), 0.2);
     }
 
     public static DoubleSupplier getLeftXC0 () {

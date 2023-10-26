@@ -65,8 +65,8 @@ public class SwerveModule {
         slot0Configs.kV = Constants.SwerveModules.steer_kV; 
         //DriveMotor Config
         driveMotorEncoder = mDriveMotor.getEncoder();
-        driveMotorEncoder.setPositionConversionFactor(1);
-        driveMotorEncoder.setVelocityConversionFactor(1);
+        driveMotorEncoder.setPositionConversionFactor(Constants.SwerveModules.posCoefficient);
+        driveMotorEncoder.setVelocityConversionFactor(Constants.SwerveModules.velCoefficient);
         drivePIDController = mDriveMotor.getPIDController(); 
         mDriveMotor.enableVoltageCompensation(12); 
         mDriveMotor.setSmartCurrentLimit(40); 
@@ -142,7 +142,7 @@ public class SwerveModule {
         mPeriodicIO.rotationDemand = targetAngleRot.getRotations();
         mSteerMotor.setControl(new PositionDutyCycle(mPeriodicIO.rotationDemand));
         if (mPeriodicIO.controlMode == DriveControlMode.Velocity){
-            mPeriodicIO.driveDemand = Constants.SwerveModules.driveMPSToRPM(targetVelocity); 
+            mPeriodicIO.driveDemand = targetVelocity / Constants.SwerveModules.velCoefficient; 
             drivePIDController.setReference(mPeriodicIO.driveDemand, ControlType.kVelocity, 0, 0);
         } else {
             mPeriodicIO.driveDemand = targetVelocity;
