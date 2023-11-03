@@ -3,17 +3,20 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.CommandBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.swerve.ChassisSpeeds;
 import frc.lib.swerve.ModuleState;
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants;
+import frc.robot.ControlBoard;
 import frc.robot.Telemetry;
 import frc.robot.Constants.SwerveModules;
 import frc.robot.Constants.Drive.DriveControlMode;
+import frc.robot.Constants.Drive.KinematicLimits;
 
 public class Drive extends SubsystemBase {
   private static Drive mDrive;
@@ -21,6 +24,15 @@ public class Drive extends SubsystemBase {
   private Pigeon2 pigeon = new Pigeon2(Constants.Drive.id_pigeon); 
 
   private PeriodicIO mPeriodicIO = new PeriodicIO(); 
+  public enum DriveControlState {
+    TeleopControl,
+    HeadingControl,
+    PathFollowing,
+    ForceOrient,
+    None
+  }
+  private DriveControlState mControlState = DriveControlState.None;
+  private KinematicLimits mKinematicLimits = Constants.Drive.defaultLimits; 
 
   private Drive() {
     swerveModules = new SwerveModule[] {
@@ -29,6 +41,7 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD2, 2),
       new SwerveModule(SwerveModules.MOD3, 3)
     };
+    pigeon.setYaw(0);
     outputTelemetry();
     for (SwerveModule module : swerveModules){
       module.outputTelemetry();
@@ -63,6 +76,7 @@ public class Drive extends SubsystemBase {
       new ModuleState()
     }; 
     ChassisSpeeds des_chassis_speeds = new ChassisSpeeds(); 
+    Rotation2d heading_setpoint = new Rotation2d(); 
   }
 
   public void readPeriodicInputs () {
@@ -81,20 +95,116 @@ public class Drive extends SubsystemBase {
   }
 
   public void writePeriodicOutputs () {
-    mPeriodicIO.des_module_states = Constants.Drive.swerveKinematics.toModuleStates(mPeriodicIO.des_chassis_speeds); 
+    updateSetpoint();
     setModulesStates(mPeriodicIO.des_module_states); 
     for (SwerveModule module : swerveModules) {
       module.writePeriodicOutputs();
     }
   }
-
+  
   @Override
   public void periodic() {
     readPeriodicInputs();
+    switch (mControlState) {
+      case TeleopControl: 
+      mPeriodicIO.des_chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+        ControlBoard.getLeftYC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
+        ControlBoard.getLeftXC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
+        ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity,
+        mPeriodicIO.yawAngle
+      );
+      break;
+      case HeadingControl:
+
+      break;
+      case PathFollowing: 
+
+      break; 
+      case None:
+
+      break;
+    }
     writePeriodicOutputs();
   }
 
+  private void updateSetpoint () {
+    Pose2d robot_pose_vel = new Pose2d(
+      mPeriodicIO.des_chassis_speeds.vxMetersPerSecond * Constants.kLooperDt, 
+      mPeriodicIO.des_chassis_speeds.vyMetersPerSecond * Constants.kLooperDt, 
+      Rotation2d.fromRadians(mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond * Constants.kLooperDt)
+    );
+    Twist2d twist_vel = new Pose2d().log(robot_pose_vel);
+    ChassisSpeeds wanted_speeds = new ChassisSpeeds(
+      twist_vel.dx / Constants.kLooperDt, 
+      twist_vel.dy / Constants.kLooperDt, 
+      twist_vel.dtheta / Constants.kLooperDt
+    );
+    if (mControlState == DriveControlState.TeleopControl || mControlState == DriveControlState.HeadingControl) {
+      // Limit rotational velocity
+      wanted_speeds.omegaRadiansPerSecond = Math.signum(wanted_speeds.omegaRadiansPerSecond) * Math.min(mKinematicLimits.kMaxAngularVelocity, Math.abs(wanted_speeds.omegaRadiansPerSecond));
+      // Limit translational velocity
+      double velocity_magnitude = Math.hypot(mPeriodicIO.des_chassis_speeds.vxMetersPerSecond, mPeriodicIO.des_chassis_speeds.vyMetersPerSecond);
+      if (velocity_magnitude > mKinematicLimits.kMaxDriveVelocity) {
+        wanted_speeds.vxMetersPerSecond = (wanted_speeds.vxMetersPerSecond / velocity_magnitude) * mKinematicLimits.kMaxDriveVelocity;
+        wanted_speeds.vyMetersPerSecond = (wanted_speeds.vyMetersPerSecond / velocity_magnitude) * mKinematicLimits.kMaxDriveVelocity;
+      }
+      ModuleState[] prev_module_states = mPeriodicIO.des_module_states.clone(); // Get last setpoint to get differentials
+      ChassisSpeeds prev_chassis_speeds = Constants.Drive.swerveKinematics.toChassisSpeeds(prev_module_states); 
+  
+      double dx = wanted_speeds.vxMetersPerSecond - prev_chassis_speeds.vxMetersPerSecond;
+      double dy = wanted_speeds.vyMetersPerSecond - prev_chassis_speeds.vyMetersPerSecond;
+      double domega = wanted_speeds.omegaRadiansPerSecond - prev_chassis_speeds.omegaRadiansPerSecond;
+  
+      double max_velocity_step = mKinematicLimits.kMaxAccel * Constants.kLooperDt;
+      double min_translational_scalar = 1.0;
+      if (max_velocity_step < Double.MAX_VALUE * Constants.kLooperDt) {
+        // Check X
+        double x_norm = Math.abs(dx / max_velocity_step);
+        min_translational_scalar = Math.min(min_translational_scalar, x_norm);
+        // Check Y
+        double y_norm = Math.abs(dy / max_velocity_step);
+        min_translational_scalar = Math.min(min_translational_scalar, y_norm);
+  
+        min_translational_scalar *= max_velocity_step;
+      }
+  
+      double max_omega_step = mKinematicLimits.kMaxAngularAccel * Constants.kLooperDt;
+      double min_omega_scalar = 1.0;
+      if (max_omega_step < Double.MAX_VALUE * Constants.kLooperDt) {
+        double omega_norm = Math.abs(domega / max_omega_step);
+        min_omega_scalar = Math.min(min_omega_scalar, omega_norm);
+  
+        min_omega_scalar *= max_omega_step;
+      }
+  
+      wanted_speeds = new ChassisSpeeds(
+        prev_chassis_speeds.vxMetersPerSecond + dx * min_translational_scalar, 
+        prev_chassis_speeds.vyMetersPerSecond + dy * min_translational_scalar, 
+        prev_chassis_speeds.omegaRadiansPerSecond + domega * min_omega_scalar
+      );
+  
+      ModuleState[] real_module_setpoints = Constants.Drive.swerveKinematics.toModuleStates(wanted_speeds);
+      mPeriodicIO.des_module_states = real_module_setpoints;
+
+    } else if (mControlState == DriveControlState.PathFollowing) {
+      mPeriodicIO.des_module_states = Constants.Drive.swerveKinematics.toModuleStates(wanted_speeds); 
+
+    } else if (mControlState == DriveControlState.ForceOrient) {
+      mPeriodicIO.des_module_states = new ModuleState [] {
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(-45), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(45), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(45), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(-45), 0)
+      };
+    }
+  }
+
   private void setModulesStates (ModuleState[] modulesStates) {
+    if (mPeriodicIO.driveControlMode == DriveControlMode.PercentOutput) {
+      for (ModuleState modState : modulesStates) {
+        modState.speedMetersPerSecond = modState.speedMetersPerSecond / mKinematicLimits.kMaxDriveVelocity; 
+      }
+    }
     for (int i = 0; i < swerveModules.length; i++) {
       swerveModules[i].setModuleState(modulesStates[i], mPeriodicIO.driveControlMode);
     }
@@ -108,17 +218,21 @@ public class Drive extends SubsystemBase {
     return moduleStates; 
   }
 
+  public Rotation2d getYawAngle () {
+    return mPeriodicIO.yawAngle; 
+  }
+
   public void setDesiredChassisSpeeds (ChassisSpeeds chassisSpeeds) {
     mPeriodicIO.des_chassis_speeds = chassisSpeeds; 
   }
 
-  public CommandBase toggleDriveControl (){
-    return runOnce(
-      () -> {
-        mPeriodicIO.driveControlMode = mPeriodicIO.driveControlMode == DriveControlMode.PercentOutput? 
-        DriveControlMode.Velocity : DriveControlMode.PercentOutput; 
-      }
-    ); 
+  public void toggleDriveControl (){
+    mPeriodicIO.driveControlMode = mPeriodicIO.driveControlMode == DriveControlMode.PercentOutput? 
+    DriveControlMode.Velocity : DriveControlMode.PercentOutput; 
+  }
+
+  public void setDriveControlState (DriveControlState state) {
+    mControlState = state; 
   }
 
   public void outputTelemetry (){

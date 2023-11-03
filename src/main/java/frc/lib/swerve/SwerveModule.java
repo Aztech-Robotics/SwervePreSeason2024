@@ -11,8 +11,10 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
@@ -70,6 +72,7 @@ public class SwerveModule {
         drivePIDController = mDriveMotor.getPIDController(); 
         mDriveMotor.enableVoltageCompensation(12); 
         mDriveMotor.setSmartCurrentLimit(40); 
+        mDriveMotor.setInverted(false);
         drivePIDController.setP(Constants.SwerveModules.drive_kP, 0);
         drivePIDController.setI(Constants.SwerveModules.drive_kI, 0);
         drivePIDController.setD(Constants.SwerveModules.drive_kD, 0);
@@ -81,6 +84,8 @@ public class SwerveModule {
         gral_config.Slot0 = slot0Configs; 
         //CANcoder Config
         CANcoderConfiguration cancoderConfigs = new CANcoderConfiguration();
+        cancoderConfigs.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1; 
+        cancoderConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive; 
         cancoderConfigs.MagnetSensor.MagnetOffset = Rotation2d.fromDegrees(360 - moduleConstants.angleOffset).getRotations(); 
         //Configs Update 
         mCANcoder.getConfigurator().apply(cancoderConfigs);
@@ -129,18 +134,17 @@ public class SwerveModule {
             return;
         }
         double targetAngle = targetModuleState.angle.getDegrees();
+        targetAngle = targetAngle - Math.floor(targetAngle / 360) * 360; 
+        Rotation2d targetAngleRot = Rotation2d.fromDegrees(targetAngle); 
         double currentAngle = mPeriodicIO.currentAngle.getDegrees();
         double targetVelocity = targetModuleState.speedMetersPerSecond; 
-        if (targetAngle < 0) {
-            targetAngle += 360;
-        }
-        Rotation2d targetAngleRot = Rotation2d.fromDegrees(targetAngle); 
         if (Math.abs(targetAngle - currentAngle) > 90){
             targetAngleRot = targetAngleRot.rotateBy(Rotation2d.fromDegrees(180)); 
             targetVelocity = -targetVelocity; 
         } 
         mPeriodicIO.rotationDemand = targetAngleRot.getRotations();
         mSteerMotor.setControl(new PositionDutyCycle(mPeriodicIO.rotationDemand));
+        /*
         if (mPeriodicIO.controlMode == DriveControlMode.Velocity){
             mPeriodicIO.driveDemand = targetVelocity / Constants.SwerveModules.velCoefficient; 
             drivePIDController.setReference(mPeriodicIO.driveDemand, ControlType.kVelocity, 0, 0);
@@ -148,6 +152,7 @@ public class SwerveModule {
             mPeriodicIO.driveDemand = targetVelocity;
             drivePIDController.setReference(mPeriodicIO.driveDemand, ControlType.kDutyCycle, 0, 0);
         }
+        */
     }
 
     public void resetModule (){
