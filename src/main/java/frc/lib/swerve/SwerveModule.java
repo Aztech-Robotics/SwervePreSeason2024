@@ -26,6 +26,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
+import frc.lib.Conversions;
 import frc.robot.Constants;
 import frc.robot.Telemetry;
 import frc.robot.Constants.Drive.DriveControlMode;
@@ -84,9 +85,9 @@ public class SwerveModule {
         gral_config.Slot0 = slot0Configs; 
         //CANcoder Config
         CANcoderConfiguration cancoderConfigs = new CANcoderConfiguration();
-        cancoderConfigs.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1; 
+        cancoderConfigs.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf; 
         cancoderConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive; 
-        cancoderConfigs.MagnetSensor.MagnetOffset = Rotation2d.fromDegrees(360 - moduleConstants.angleOffset).getRotations(); 
+        cancoderConfigs.MagnetSensor.MagnetOffset = Rotation2d.fromDegrees(moduleConstants.angleOffset).getRotations(); 
         //Configs Update 
         mCANcoder.getConfigurator().apply(cancoderConfigs);
         mSteerMotor.getConfigurator().apply(gral_config); 
@@ -97,13 +98,13 @@ public class SwerveModule {
     public static class PeriodicIO {
         //Inputs
         double timestamp = 0;
-        Rotation2d currentAngle = new Rotation2d();
+        double currentAngle = 0;
         double velocity = 0; 
         double drivePosition = 0;
         //Outputs
         double rotationDemand = 0;
         double driveDemand = 0; 
-        DriveControlMode controlMode = DriveControlMode.PercentOutput; 
+        DriveControlMode controlMode = DriveControlMode.Velocity; 
     }
 
     public static class SwerveModuleConstants {
@@ -124,7 +125,7 @@ public class SwerveModule {
         mPeriodicIO.timestamp = Timer.getFPGATimestamp(); 
         StatusSignal<Double> absPosCancoder = mCANcoder.getAbsolutePosition(); 
         absPosCancoder.refresh(); 
-        mPeriodicIO.currentAngle = Rotation2d.fromRotations(absPosCancoder.getValue());
+        mPeriodicIO.currentAngle = Rotation2d.fromRotations(absPosCancoder.getValue()).getDegrees();
         mPeriodicIO.velocity = driveMotorEncoder.getVelocity();
         mPeriodicIO.drivePosition = driveMotorEncoder.getPosition(); 
     }
@@ -133,18 +134,17 @@ public class SwerveModule {
         if (targetModuleState == null) {
             return;
         }
-        double targetAngle = targetModuleState.angle.getDegrees();
-        targetAngle = targetAngle - Math.floor(targetAngle / 360) * 360; 
+        double targetAngle = Conversions.signedToUnsignedDeg(targetModuleState.angle.getDegrees()); 
         Rotation2d targetAngleRot = Rotation2d.fromDegrees(targetAngle); 
-        double currentAngle = mPeriodicIO.currentAngle.getDegrees();
+        double currentAngle = mPeriodicIO.currentAngle;
         double targetVelocity = targetModuleState.speedMetersPerSecond; 
         if (Math.abs(targetAngle - currentAngle) > 90){
-            targetAngleRot = targetAngleRot.rotateBy(Rotation2d.fromDegrees(180)); 
+            targetAngleRot = targetAngle > 180 ? Rotation2d.fromDegrees(targetAngle - 180) : Rotation2d.fromDegrees(targetAngle + 180); 
             targetVelocity = -targetVelocity; 
         } 
+        targetAngleRot = Rotation2d.fromDegrees(Conversions.unsignedToSignedDeg(targetAngleRot.getDegrees())); 
         mPeriodicIO.rotationDemand = targetAngleRot.getRotations();
         mSteerMotor.setControl(new PositionDutyCycle(mPeriodicIO.rotationDemand));
-        /*
         if (mPeriodicIO.controlMode == DriveControlMode.Velocity){
             mPeriodicIO.driveDemand = targetVelocity / Constants.SwerveModules.velCoefficient; 
             drivePIDController.setReference(mPeriodicIO.driveDemand, ControlType.kVelocity, 0, 0);
@@ -152,7 +152,6 @@ public class SwerveModule {
             mPeriodicIO.driveDemand = targetVelocity;
             drivePIDController.setReference(mPeriodicIO.driveDemand, ControlType.kDutyCycle, 0, 0);
         }
-        */
     }
 
     public void resetModule (){
@@ -161,11 +160,11 @@ public class SwerveModule {
 
     public void setModuleState (ModuleState desiredModuleState, DriveControlMode controlMode) {
         targetModuleState = desiredModuleState; 
-        mPeriodicIO.controlMode = mPeriodicIO.controlMode != controlMode ? controlMode : mPeriodicIO.controlMode; 
+        mPeriodicIO.controlMode = controlMode; 
     }
 
     public ModuleState getModuleState (){
-        return new ModuleState(mPeriodicIO.drivePosition, mPeriodicIO.currentAngle, mPeriodicIO.velocity); 
+        return new ModuleState(mPeriodicIO.drivePosition, Rotation2d.fromDegrees(mPeriodicIO.currentAngle), mPeriodicIO.velocity); 
     }
 
     public void setNeutralMode (boolean wantBrake){
@@ -187,7 +186,7 @@ public class SwerveModule {
     public void outputTelemetry (){
         ShuffleboardLayout motorsData = Telemetry.swerveTab.getLayout("Module " + moduleNumber, BuiltInLayouts.kList)
         .withSize(2, 3).withPosition(2 * moduleNumber, 0);
-        motorsData.addDouble("Angle", () -> mPeriodicIO.currentAngle.getDegrees());
+        motorsData.addDouble("Angle", () -> mPeriodicIO.currentAngle);
         motorsData.addDouble("Velocity", ()-> mPeriodicIO.velocity);
         motorsData.addDouble("Position", () -> mPeriodicIO.drivePosition); 
     }

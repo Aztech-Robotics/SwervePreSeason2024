@@ -9,7 +9,10 @@ import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.swerve.ChassisSpeeds;
+import frc.lib.swerve.DriveMotionPlanner;
 import frc.lib.swerve.ModuleState;
+import frc.lib.swerve.SwerveDriveKinematics;
+import frc.lib.swerve.SwerveDriveOdometry;
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants;
 import frc.robot.ControlBoard;
@@ -68,7 +71,7 @@ public class Drive extends SubsystemBase {
     };
     ChassisSpeeds meas_chassis_speeds = new ChassisSpeeds(); 
     //Outputs 
-    DriveControlMode driveControlMode = DriveControlMode.PercentOutput; 
+    DriveControlMode driveControlMode = DriveControlMode.Velocity; 
     ModuleState[] des_module_states = new ModuleState[] {
       new ModuleState(),
       new ModuleState(),
@@ -83,7 +86,7 @@ public class Drive extends SubsystemBase {
     mPeriodicIO.timestamp = Timer.getFPGATimestamp(); 
     StatusSignal<Double> yawAngle = pigeon.getYaw(); 
     yawAngle.refresh();
-    mPeriodicIO.yawAngle = Rotation2d.fromDegrees(yawAngle.getValue()); 
+    mPeriodicIO.yawAngle = Rotation2d.fromDegrees(yawAngle.getValue() % 360); 
     StatusSignal<Double> yawVel = pigeon.getAngularVelocityZ(); 
     yawVel.refresh(); 
     mPeriodicIO.yaw_velocity = yawVel.getValue(); 
@@ -115,13 +118,12 @@ public class Drive extends SubsystemBase {
       );
       break;
       case HeadingControl:
-
       break;
       case PathFollowing: 
-
       break; 
+      case ForceOrient:
+      break;
       case None:
-
       break;
     }
     writePeriodicOutputs();

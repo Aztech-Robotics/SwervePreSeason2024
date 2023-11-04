@@ -23,14 +23,14 @@ public final class Constants {
             PercentOutput
         }
 
-        public static final double maxVelocity = 4.4; 
-        public static final double maxAngularVelocity = 9;
+        public static final double maxVelocity = 4; //Empirical Max Velocity
+        public static final double maxAngularVelocity = 8.9; //Theoretical Max Angular Velocity
 
         public static class KinematicLimits {
-            public double kMaxDriveVelocity = maxVelocity; // m/s
-            public double kMaxAccel = Double.MAX_VALUE; // m/s^2
-            public double kMaxAngularVelocity = maxAngularVelocity; // rad/s
-            public double kMaxAngularAccel = Double.MAX_VALUE; // rad/s^2
+            public double kMaxDriveVelocity = maxVelocity; 
+            public double kMaxAccel = Double.MAX_VALUE; 
+            public double kMaxAngularVelocity = maxAngularVelocity; 
+            public double kMaxAngularAccel = Double.MAX_VALUE; 
             KinematicLimits () {}
             KinematicLimits (double kMaxDriveVelocity, double kMaxAngularVelocity) {
               this.kMaxDriveVelocity = kMaxDriveVelocity; 
@@ -44,16 +44,32 @@ public final class Constants {
             }
         } 
         public static final KinematicLimits defaultLimits = new KinematicLimits();
+
+        public static final double kp_x = 0;
+        public static final double ki_x = 0;
+        public static final double kd_x = 0;
+        
+        public static final double kp_y = 0;
+        public static final double ki_y = 0;
+        public static final double kd_y = 0;
+
+        public static final double kp_theta = 0;
+        public static final double ki_theta = 0;
+        public static final double kd_theta = 0; 
+
+        public static final double kp_snap = 0;
+        public static final double ki_snap = 0;
+        public static final double kd_snap = 0; 
     }
     public static class SwerveModules {
         public static final double steering_gear_ratio = 12.8; 
         public static final double drive_gear_ratio = 6.75;
         public static final double wheelCircumference = Math.PI * Units.inchesToMeters(4);
 
-        public static final SwerveModuleConstants MOD0 = new SwerveModuleConstants(1, 2, 3, 331);
-        public static final SwerveModuleConstants MOD1 = new SwerveModuleConstants(4, 5, 6, 312);
-        public static final SwerveModuleConstants MOD2 = new SwerveModuleConstants(7, 8, 9, 275.8); 
-        public static final SwerveModuleConstants MOD3 = new SwerveModuleConstants(10, 11, 12, 0.5); 
+        public static final SwerveModuleConstants MOD0 = new SwerveModuleConstants(1, 2, 3, 0);
+        public static final SwerveModuleConstants MOD1 = new SwerveModuleConstants(4, 5, 6, 0);
+        public static final SwerveModuleConstants MOD2 = new SwerveModuleConstants(7, 8, 9, 0); 
+        public static final SwerveModuleConstants MOD3 = new SwerveModuleConstants(10, 11, 12, 0); 
 
         public static final double steer_kP = 1.6;
         public static final double steer_kI = 0;
@@ -61,7 +77,7 @@ public final class Constants {
         public static final double steer_kS = 0;
         public static final double steer_kV = 0;
         
-        public static final double drive_kP = 0;
+        public static final double drive_kP = 0.0009;
         public static final double drive_kI = 0;
         public static final double drive_kD = 0;
         public static final double drive_kFF = 0;
