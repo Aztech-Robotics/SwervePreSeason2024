@@ -48,7 +48,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     if (ControlBoard.driver.getAButtonPressed()) {
-      mDrive.resetYawAngle();
+      mDrive.setYawAngle(0);
     }
     if (ControlBoard.driver.getYButtonPressed()) {
       mDrive.setDriveControlState(DriveControlState.ForceOrient);

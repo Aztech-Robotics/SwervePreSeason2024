@@ -42,6 +42,10 @@ public class DriveMotionPlanner {
         return snapController.calculate(current_heading, target_heading);
     }
 
+    public boolean isAtHeadingSetpoint () {
+        return snapController.atSetpoint(); 
+    }
+
     public void setTrajectory (Trajectory trajectory, Rotation2d heading, Pose2d current_pose){
         current_trajectory = trajectory;
         isTrajectoryFinished = false; 

@@ -120,11 +120,11 @@ public class Drive extends SubsystemBase {
         mPeriodicIO.yawAngle
       );
       if (mControlState == DriveControlState.HeadingControl) {
-        if (mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond < 1) {
+        if (mMotionPlanner.isAtHeadingSetpoint()) {
+          mControlState = DriveControlState.TeleopControl; 
+        } else {
           mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond = 
           mMotionPlanner.calculateRotationalAdjustment(mPeriodicIO.heading_setpoint.getRadians(), mPeriodicIO.yawAngle.getRadians());
-        } else {
-          mControlState = DriveControlState.TeleopControl; 
         }
       }
     } else if (mControlState == DriveControlState.PathFollowing) {
@@ -228,7 +228,7 @@ public class Drive extends SubsystemBase {
     mPeriodicIO.des_chassis_speeds = chassisSpeeds; 
   }
 
-  public void resetYawAngle () {
+  public void resetGyro () {
     pigeon.reset(); 
   }
 
@@ -272,6 +272,11 @@ public class Drive extends SubsystemBase {
 
   public boolean isTrajectoryFinished () {
     return mControlState == DriveControlState.PathFollowing && mMotionPlanner.isTrajectoryFinished(); 
+  }
+
+  public void setHeadingControl (Rotation2d headingSetpoint) {
+    mPeriodicIO.heading_setpoint = headingSetpoint; 
+    mControlState = DriveControlState.HeadingControl; 
   }
 
   public void outputTelemetry (){
