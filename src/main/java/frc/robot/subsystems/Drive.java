@@ -112,24 +112,23 @@ public class Drive extends SubsystemBase {
   @Override
   public void periodic() {
     readPeriodicInputs();
-    switch (mControlState) {
-      case TeleopControl: 
+    if (mControlState == DriveControlState.TeleopControl || mControlState == DriveControlState.HeadingControl) {
       mPeriodicIO.des_chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
         ControlBoard.getLeftYC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
         ControlBoard.getLeftXC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
         ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity,
         mPeriodicIO.yawAngle
       );
-      break;
-      case HeadingControl: 
-      break;
-      case PathFollowing: 
+      if (mControlState == DriveControlState.HeadingControl) {
+        if (mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond < 1) {
+          mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond = 
+          mMotionPlanner.calculateRotationalAdjustment(mPeriodicIO.heading_setpoint.getRadians(), mPeriodicIO.yawAngle.getRadians());
+        } else {
+          mControlState = DriveControlState.TeleopControl; 
+        }
+      }
+    } else if (mControlState == DriveControlState.PathFollowing) {
       mPeriodicIO.des_chassis_speeds = mMotionPlanner.update(getPose(), mPeriodicIO.timestamp);
-      break; 
-      case ForceOrient:
-      break;
-      case None:
-      break;
     }
     writePeriodicOutputs();
   }
