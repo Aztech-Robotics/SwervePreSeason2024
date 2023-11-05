@@ -43,7 +43,10 @@ public final class Constants {
               this.kMaxAngularAccel = kMaxAngularAccel;
             }
         } 
-        public static final KinematicLimits defaultLimits = new KinematicLimits();
+        public static final KinematicLimits uncappedLimits = new KinematicLimits();
+        public static final KinematicLimits oneMPSLimits = new KinematicLimits(1, Math.PI); 
+        public static final KinematicLimits twoMPSLimits = new KinematicLimits(2, Math.PI); 
+        public static final KinematicLimits threeMPSLimits = new KinematicLimits(3, Math.PI);
 
         public static final double kp_x = 0;
         public static final double ki_x = 0;

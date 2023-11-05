@@ -6,12 +6,12 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.swerve.ChassisSpeeds;
 import frc.lib.swerve.DriveMotionPlanner;
 import frc.lib.swerve.ModuleState;
-import frc.lib.swerve.SwerveDriveKinematics;
 import frc.lib.swerve.SwerveDriveOdometry;
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants;
@@ -35,7 +35,9 @@ public class Drive extends SubsystemBase {
     None
   }
   private DriveControlState mControlState = DriveControlState.None;
-  private KinematicLimits mKinematicLimits = Constants.Drive.defaultLimits; 
+  private KinematicLimits mKinematicLimits = Constants.Drive.oneMPSLimits; 
+  private DriveMotionPlanner mMotionPlanner = new DriveMotionPlanner();
+  private SwerveDriveOdometry mOdometry; 
 
   private Drive() {
     swerveModules = new SwerveModule[] {
@@ -45,6 +47,7 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD3, 3)
     };
     pigeon.setYaw(0);
+    mOdometry = new SwerveDriveOdometry(Constants.Drive.swerveKinematics, getModulesStates(), new Pose2d()); 
     outputTelemetry();
     for (SwerveModule module : swerveModules){
       module.outputTelemetry();
@@ -71,7 +74,7 @@ public class Drive extends SubsystemBase {
     };
     ChassisSpeeds meas_chassis_speeds = new ChassisSpeeds(); 
     //Outputs 
-    DriveControlMode driveControlMode = DriveControlMode.Velocity; 
+    DriveControlMode driveControlMode = DriveControlMode.PercentOutput; 
     ModuleState[] des_module_states = new ModuleState[] {
       new ModuleState(),
       new ModuleState(),
@@ -86,7 +89,7 @@ public class Drive extends SubsystemBase {
     mPeriodicIO.timestamp = Timer.getFPGATimestamp(); 
     StatusSignal<Double> yawAngle = pigeon.getYaw(); 
     yawAngle.refresh();
-    mPeriodicIO.yawAngle = Rotation2d.fromDegrees(yawAngle.getValue() % 360); 
+    mPeriodicIO.yawAngle = Rotation2d.fromDegrees(yawAngle.getValue()); 
     StatusSignal<Double> yawVel = pigeon.getAngularVelocityZ(); 
     yawVel.refresh(); 
     mPeriodicIO.yaw_velocity = yawVel.getValue(); 
@@ -95,6 +98,7 @@ public class Drive extends SubsystemBase {
     }
     mPeriodicIO.meas_module_states = getModulesStates(); 
     mPeriodicIO.meas_chassis_speeds = Constants.Drive.swerveKinematics.toChassisSpeeds(mPeriodicIO.meas_module_states);
+    mOdometry.update(mPeriodicIO.yawAngle, mPeriodicIO.meas_module_states);
   }
 
   public void writePeriodicOutputs () {
@@ -117,9 +121,10 @@ public class Drive extends SubsystemBase {
         mPeriodicIO.yawAngle
       );
       break;
-      case HeadingControl:
+      case HeadingControl: 
       break;
       case PathFollowing: 
+      mPeriodicIO.des_chassis_speeds = mMotionPlanner.update(getPose(), mPeriodicIO.timestamp);
       break; 
       case ForceOrient:
       break;
@@ -220,12 +225,20 @@ public class Drive extends SubsystemBase {
     return moduleStates; 
   }
 
-  public Rotation2d getYawAngle () {
-    return mPeriodicIO.yawAngle; 
-  }
-
   public void setDesiredChassisSpeeds (ChassisSpeeds chassisSpeeds) {
     mPeriodicIO.des_chassis_speeds = chassisSpeeds; 
+  }
+
+  public void resetYawAngle () {
+    pigeon.reset(); 
+  }
+
+  public void setYawAngle (double angle) {
+    pigeon.setYaw(angle); 
+  }
+
+  public Rotation2d getYawAngle () {
+    return mPeriodicIO.yawAngle; 
   }
 
   public void toggleDriveControl (){
@@ -234,7 +247,32 @@ public class Drive extends SubsystemBase {
   }
 
   public void setDriveControlState (DriveControlState state) {
-    mControlState = state; 
+    if (mControlState != state) mControlState = state; 
+  }
+
+  public void setKinematicsLimits (KinematicLimits limits) {
+    mKinematicLimits = limits; 
+  }
+
+  public void resetOdometry (Pose2d pose) {
+    for (SwerveModule module : swerveModules) {
+      module.resetModule();
+    }
+    mOdometry.resetPosition(getModulesStates(), pose);
+    setYawAngle(pose.getRotation().getDegrees()); 
+  }
+
+  public Pose2d getPose () {
+    return mOdometry.getPoseMeters(); 
+  }
+
+  public void setTrajectory (Trajectory trajectory, Rotation2d heading) {
+    mMotionPlanner.setTrajectory(trajectory, heading, getPose());
+    mControlState = DriveControlState.PathFollowing; 
+  }
+
+  public boolean isTrajectoryFinished () {
+    return mControlState == DriveControlState.PathFollowing && mMotionPlanner.isTrajectoryFinished(); 
   }
 
   public void outputTelemetry (){

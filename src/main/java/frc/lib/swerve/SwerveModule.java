@@ -104,7 +104,7 @@ public class SwerveModule {
         //Outputs
         double rotationDemand = 0;
         double driveDemand = 0; 
-        DriveControlMode controlMode = DriveControlMode.Velocity; 
+        DriveControlMode controlMode = DriveControlMode.PercentOutput; 
     }
 
     public static class SwerveModuleConstants {

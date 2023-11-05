@@ -42,11 +42,25 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
-    mDrive.setDriveControlState(DriveControlState.TeleopControl);
+    mDrive.setDriveControlState(DriveControlState.TeleopControl); 
   }
 
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    if (ControlBoard.driver.getAButtonPressed()) {
+      mDrive.resetYawAngle();
+    }
+    if (ControlBoard.driver.getYButtonPressed()) {
+      mDrive.setDriveControlState(DriveControlState.ForceOrient);
+    } else if (ControlBoard.driver.getYButtonReleased()) {
+      mDrive.setDriveControlState(DriveControlState.TeleopControl);
+    }
+    if (ControlBoard.driver.getBButtonPressed()) {
+      mDrive.setKinematicsLimits(Constants.Drive.twoMPSLimits);
+    } else if (ControlBoard.driver.getXButtonPressed()) {
+      mDrive.setKinematicsLimits(Constants.Drive.oneMPSLimits);
+    }
+  }
 
   @Override
   public void testInit() {
