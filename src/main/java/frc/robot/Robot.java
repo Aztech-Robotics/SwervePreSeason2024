@@ -21,7 +21,9 @@ public class Robot extends TimedRobot {
   }
 
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+    mDrive.setDriveControlState(DriveControlState.None);
+  }
 
   @Override
   public void disabledPeriodic() {}
@@ -48,7 +50,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     if (ControlBoard.driver.getAButtonPressed()) {
-      mDrive.setYawAngle(0);
+      mDrive.setYawAngle(0); 
     }
     if (ControlBoard.driver.getYButtonPressed()) {
       mDrive.setDriveControlState(DriveControlState.ForceOrient);

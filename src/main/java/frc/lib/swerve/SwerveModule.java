@@ -53,7 +53,7 @@ public class SwerveModule {
         currentLimitsConfigs.SupplyCurrentThreshold = 40;
         currentLimitsConfigs.SupplyTimeThreshold = 0.1; 
         currentLimitsConfigs.SupplyCurrentLimit = 25;
-        currentLimitsConfigs.SupplyCurrentLimitEnable = true;
+        currentLimitsConfigs.SupplyCurrentLimitEnable = false;
         FeedbackConfigs feedbackConfigs = new FeedbackConfigs(); 
         feedbackConfigs.FeedbackRemoteSensorID = mCANcoder.getDeviceID();
         feedbackConfigs.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder; 
@@ -92,7 +92,8 @@ public class SwerveModule {
         mCANcoder.getConfigurator().apply(cancoderConfigs);
         mSteerMotor.getConfigurator().apply(gral_config); 
         mDriveMotor.burnFlash();
-        setNeutralMode(true);
+        setNeutralMode(true  
+        ); 
     }
 
     public static class PeriodicIO {
@@ -134,15 +135,15 @@ public class SwerveModule {
         if (targetModuleState == null) {
             return;
         }
-        double targetAngle = Conversions.signedToUnsignedDeg(targetModuleState.angle.getDegrees()); 
+        double targetAngle = targetModuleState.angle.getDegrees(); 
         Rotation2d targetAngleRot = Rotation2d.fromDegrees(targetAngle); 
         double currentAngle = mPeriodicIO.currentAngle;
         double targetVelocity = targetModuleState.speedMetersPerSecond; 
         if (Math.abs(targetAngle - currentAngle) > 90){
-            targetAngleRot = targetAngle > 180 ? Rotation2d.fromDegrees(targetAngle - 180) : Rotation2d.fromDegrees(targetAngle + 180); 
+            targetAngleRot = targetAngle >= 180 ? Rotation2d.fromDegrees(targetAngle - 180) : Rotation2d.fromDegrees(targetAngle + 180); 
             targetVelocity = -targetVelocity; 
         } 
-        targetAngleRot = Rotation2d.fromDegrees(Conversions.unsignedToSignedDeg(targetAngleRot.getDegrees())); 
+        targetAngleRot = Rotation2d.fromDegrees(targetAngleRot.getDegrees()); 
         mPeriodicIO.rotationDemand = targetAngleRot.getRotations();
         mSteerMotor.setControl(new PositionDutyCycle(mPeriodicIO.rotationDemand));
         if (mPeriodicIO.controlMode == DriveControlMode.Velocity){
