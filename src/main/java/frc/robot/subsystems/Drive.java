@@ -74,7 +74,7 @@ public class Drive extends SubsystemBase {
     };
     ChassisSpeeds meas_chassis_speeds = new ChassisSpeeds(); 
     //Outputs 
-    DriveControlMode driveControlMode = DriveControlMode.PercentOutput; 
+    DriveControlMode driveControlMode = DriveControlMode.Velocity; 
     ModuleState[] des_module_states = new ModuleState[] {
       new ModuleState(),
       new ModuleState(),
@@ -113,11 +113,10 @@ public class Drive extends SubsystemBase {
   public void periodic() {
     readPeriodicInputs();
     if (mControlState == DriveControlState.TeleopControl || mControlState == DriveControlState.HeadingControl) {
-      mPeriodicIO.des_chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+      mPeriodicIO.des_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(
         ControlBoard.getLeftYC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
         ControlBoard.getLeftXC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
-        ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity,
-        mPeriodicIO.yawAngle
+        ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity
       );
       if (mControlState == DriveControlState.HeadingControl) {
         if (mMotionPlanner.isAtHeadingSetpoint()) {

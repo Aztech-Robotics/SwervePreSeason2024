@@ -75,12 +75,12 @@ public final class Constants {
         public static final SwerveModuleConstants MOD3 = new SwerveModuleConstants(10, 11, 12, 0.6); 
 
         public static final double steer_kP = 1.68;
-        public static final double steer_kI = 0;
+        public static final double steer_kI = 0.0001;
         public static final double steer_kD = 0;
         public static final double steer_kS = 0;
         public static final double steer_kV = 0;
         
-        public static final double drive_kP = 0.0009;
+        public static final double drive_kP = 1.82e-4;
         public static final double drive_kI = 0;
         public static final double drive_kD = 0;
         public static final double drive_kFF = 0;

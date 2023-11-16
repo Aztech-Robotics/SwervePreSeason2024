@@ -22,6 +22,7 @@ import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
@@ -42,6 +43,8 @@ public class SwerveModule {
 
     private PeriodicIO mPeriodicIO = new PeriodicIO(); 
     private ModuleState targetModuleState; 
+
+    private PIDController driveController = new PIDController(0, Constants.SwerveModules.drive_kI, Constants.SwerveModules.drive_kD); 
     
     public SwerveModule (SwerveModuleConstants moduleConstants, int moduleNumber){
         this.moduleNumber = moduleNumber; 
@@ -105,7 +108,7 @@ public class SwerveModule {
         //Outputs
         double rotationDemand = 0;
         double driveDemand = 0; 
-        DriveControlMode controlMode = DriveControlMode.PercentOutput; 
+        DriveControlMode controlMode = DriveControlMode.Velocity; 
     }
 
     public static class SwerveModuleConstants {
@@ -157,6 +160,7 @@ public class SwerveModule {
 
     public void resetModule (){
         driveMotorEncoder.setPosition(0);
+        
     }
 
     public void setModuleState (ModuleState desiredModuleState, DriveControlMode controlMode) {
@@ -187,8 +191,11 @@ public class SwerveModule {
     public void outputTelemetry (){
         ShuffleboardLayout motorsData = Telemetry.swerveTab.getLayout("Module " + moduleNumber, BuiltInLayouts.kList)
         .withSize(2, 3).withPosition(2 * moduleNumber, 0);
-        motorsData.addDouble("Angle", () -> mPeriodicIO.currentAngle);
-        motorsData.addDouble("Velocity", ()-> mPeriodicIO.velocity);
-        motorsData.addDouble("Position", () -> mPeriodicIO.drivePosition); 
+        motorsData.addDouble("Desired Angle", () -> targetModuleState.angle.getDegrees());
+        motorsData.addDouble("Current Angle", () -> mPeriodicIO.currentAngle); 
+        motorsData.addDouble("Desired Velocity", () -> targetModuleState.speedMetersPerSecond);  
+        motorsData.addDouble("Current Velocity", ()-> mPeriodicIO.velocity);
+        //motorsData.addDouble("Angle", () -> mPeriodicIO.currentAngle);
+        //motorsData.addDouble("Position", () -> mPeriodicIO.drivePosition); 
     }
 }
