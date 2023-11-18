@@ -57,11 +57,6 @@ public class Robot extends TimedRobot {
     } else if (ControlBoard.driver.getYButtonReleased()) {
       mDrive.setDriveControlState(DriveControlState.TeleopControl);
     }
-    if (ControlBoard.driver.getBButtonPressed()) {
-      mDrive.setKinematicsLimits(Constants.Drive.twoMPSLimits);
-    } else if (ControlBoard.driver.getXButtonPressed()) {
-      mDrive.setKinematicsLimits(Constants.Drive.oneMPSLimits);
-    }
   }
 
   @Override

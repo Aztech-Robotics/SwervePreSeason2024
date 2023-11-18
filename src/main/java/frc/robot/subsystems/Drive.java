@@ -113,10 +113,11 @@ public class Drive extends SubsystemBase {
   public void periodic() {
     readPeriodicInputs();
     if (mControlState == DriveControlState.TeleopControl || mControlState == DriveControlState.HeadingControl) {
-      mPeriodicIO.des_chassis_speeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+      mPeriodicIO.des_chassis_speeds = ChassisSpeeds.fromFieldRelativeSpeeds(
         ControlBoard.getLeftYC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
         ControlBoard.getLeftXC0().getAsDouble() * mKinematicLimits.kMaxDriveVelocity, 
-        ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity
+        ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity,
+        mPeriodicIO.yawAngle
       );
       if (mControlState == DriveControlState.HeadingControl) {
         if (mMotionPlanner.isAtHeadingSetpoint()) {
@@ -196,11 +197,17 @@ public class Drive extends SubsystemBase {
 
     } else if (mControlState == DriveControlState.ForceOrient) {
       mPeriodicIO.des_module_states = new ModuleState [] {
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(-45), 0),
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(45), 0),
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(45), 0),
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(-45), 0)
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0)
       };
+    }
+  }
+
+  public void resetModulesToZero () {
+    for (SwerveModule module : swerveModules) {
+      module.resetModule(); 
     }
   }
 
