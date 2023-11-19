@@ -45,8 +45,7 @@ public class SwerveDriveOdometry {
 
 		m_previousModulePositions = new SwerveModulePosition[m_numModules];
 		for (int index = 0; index < m_numModules; index++) {
-			m_previousModulePositions[index] = new SwerveModulePosition(
-					modulePositions[index].distanceMeters, modulePositions[index].angle);
+			m_previousModulePositions[index] = new SwerveModulePosition(modulePositions[index].distanceMeters, modulePositions[index].angle);
 		}
 	}
 
@@ -57,9 +56,7 @@ public class SwerveDriveOdometry {
 	 * @param gyroAngle       The angle reported by the gyroscope.
 	 * @param modulePositions The wheel positions reported by each module.
 	 */
-	public SwerveDriveOdometry(
-			SwerveDriveKinematics kinematics,
-			SwerveModulePosition[] modulePositions) {
+	public SwerveDriveOdometry(SwerveDriveKinematics kinematics, SwerveModulePosition[] modulePositions) {
 		this(kinematics, modulePositions, new Pose2d());
 	}
 
@@ -76,8 +73,7 @@ public class SwerveDriveOdometry {
 		m_poseMeters = pose;
 		m_previousAngle = pose.getRotation();
 		for (int index = 0; index < m_numModules; index++) {
-			m_previousModulePositions[index] = new SwerveModulePosition(
-					modulePositions[index].distanceMeters, modulePositions[index].angle);
+			m_previousModulePositions[index] = new SwerveModulePosition(modulePositions[index].distanceMeters, modulePositions[index].angle);
 		}
 	}
 
@@ -111,8 +107,7 @@ public class SwerveDriveOdometry {
 	public Pose2d update(Rotation2d gyroAngle, SwerveModulePosition[] modulePositions) {
 		if (modulePositions.length != m_numModules) {
 			throw new IllegalArgumentException(
-					"Number of modules is not consistent with number of wheel locations provided in "
-							+ "constructor");
+			"Number of modules is not consistent with number of wheel locations provided in " + "constructor");
 		}
 
 		var moduleDeltas = new SwerveModulePosition[m_numModules];
@@ -120,8 +115,7 @@ public class SwerveDriveOdometry {
 			var current = modulePositions[index];
 			var previous = m_previousModulePositions[index];
 
-			moduleDeltas[index] = new SwerveModulePosition(current.distanceMeters - previous.distanceMeters,
-					current.angle);
+			moduleDeltas[index] = new SwerveModulePosition(current.distanceMeters - previous.distanceMeters, current.angle);
 			previous.distanceMeters = current.distanceMeters;
 		}
 

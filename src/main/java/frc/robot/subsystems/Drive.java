@@ -2,14 +2,14 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.pathplanner.lib.path.PathPlannerTrajectory;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Twist2d;
-import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.lib.swerve.ChassisSpeeds;
 import frc.lib.swerve.DriveMotionPlanner;
 import frc.lib.swerve.ModuleState;
 import frc.lib.swerve.SwerveDriveOdometry;
@@ -36,8 +36,9 @@ public class Drive extends SubsystemBase {
   }
   private DriveControlState mControlState = DriveControlState.None;
   private KinematicLimits mKinematicLimits = Constants.Drive.oneMPSLimits; 
-  private DriveMotionPlanner mMotionPlanner = new DriveMotionPlanner();
+  private DriveMotionPlanner mMotionPlanner; 
   private SwerveDriveOdometry mOdometry; 
+  private boolean odometryReset = false; 
 
   private Drive() {
     swerveModules = new SwerveModule[] {
@@ -46,12 +47,13 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD2, 2),
       new SwerveModule(SwerveModules.MOD3, 3)
     };
-    pigeon.setYaw(0);
-    mOdometry = new SwerveDriveOdometry(Constants.Drive.swerveKinematics, getModulesStates(), new Pose2d()); 
-    outputTelemetry();
+    pigeon.reset();
+    mOdometry = new SwerveDriveOdometry(Constants.Drive.swerveKinematics, getModulesStates()); 
+    outputTelemetry(); 
     for (SwerveModule module : swerveModules){
-      module.outputTelemetry();
+      module.outputTelemetry(); 
     }
+    mMotionPlanner = new DriveMotionPlanner(); 
   }
 
   public static Drive getInstance () {
@@ -265,14 +267,19 @@ public class Drive extends SubsystemBase {
     }
     mOdometry.resetPosition(getModulesStates(), pose);
     setYawAngle(pose.getRotation().getDegrees()); 
+    odometryReset = true; 
   }
 
   public Pose2d getPose () {
     return mOdometry.getPoseMeters(); 
   }
 
-  public void setTrajectory (Trajectory trajectory, Rotation2d heading) {
-    mMotionPlanner.setTrajectory(trajectory, heading, getPose());
+  public boolean isReadyForAuto () {
+    return odometryReset; 
+  }
+
+  public void setTrajectory (PathPlannerTrajectory trajectory) {
+    mMotionPlanner.setTrajectory(trajectory, getPose(), mPeriodicIO.meas_chassis_speeds);
     mControlState = DriveControlState.PathFollowing; 
   }
 
