@@ -14,7 +14,7 @@ public class AutoTest implements IAuto {
     private final PathPlannerPath samplePath1;
     private final FollowPath commSamplePath1;
     public AutoTest () {
-        samplePath1 = PathPlannerPath.fromPathFile(""); 
+        samplePath1 = PathPlannerPath.fromPathFile("SamplePath1"); 
         commSamplePath1 = new FollowPath(new PathPlannerTrajectory(samplePath1, new ChassisSpeeds())); 
     }
 
