@@ -26,7 +26,16 @@
       "isLocked": false
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.3,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 0.8,
+      "rotationDegrees": -115.0
+    }
+  ],
   "constraintZones": [
     {
       "name": "DriftingAtTheBeginning",

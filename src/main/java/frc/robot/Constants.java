@@ -1,11 +1,12 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
-import frc.lib.swerve.SwerveDriveKinematics;
 import frc.lib.swerve.SwerveModule.SwerveModuleConstants;
 
 public final class Constants {
+
     public static double kLooperDt = 0.02; 
     public static class Drive {
         public static final int id_pigeon = 13;
@@ -43,8 +44,10 @@ public final class Constants {
               this.kMaxAngularAccel = kMaxAngularAccel;
             }
         } 
+        
         public static final KinematicLimits uncappedLimits = new KinematicLimits();
-        public static final KinematicLimits oneMPSLimits = new KinematicLimits(2, Double.MAX_VALUE, Math.PI , Math.PI / 2);  
+        public static final KinematicLimits autoLimits = new KinematicLimits(3.5, 4, Math.PI, Math.PI); 
+        public static final KinematicLimits oneMPSLimits = new KinematicLimits(2, Math.PI);  
 
         public static final double kp_x = 0;
         public static final double ki_x = 0;
@@ -62,6 +65,7 @@ public final class Constants {
         public static final double ki_snap = 0;
         public static final double kd_snap = 0; 
     }
+
     public static class SwerveModules {
         public static final double steering_gear_ratio = 12.8; 
         public static final double drive_gear_ratio = 6.75;
@@ -75,7 +79,7 @@ public final class Constants {
         public static final double steer_kP = 1.25;
         public static final double steer_kI = 0.5; //0.155 .5
         public static final double steer_kD = 0.02;
-        public static final double steer_kS = 0;
+        public static final double steer_kS = 0.2;
         public static final double steer_kV = 0;
         
         public static final double drive_kP = 1.82e-4;

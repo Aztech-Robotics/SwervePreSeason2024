@@ -49,9 +49,9 @@ public class SwerveModule {
         mCANcoder = new CANcoder(moduleConstants.cancoderID); 
         //SteerMotor Config
         CurrentLimitsConfigs currentLimitsConfigs = new CurrentLimitsConfigs(); 
-        currentLimitsConfigs.SupplyCurrentThreshold = 40;
+        currentLimitsConfigs.SupplyCurrentThreshold = 50;
         currentLimitsConfigs.SupplyTimeThreshold = 0.1; 
-        currentLimitsConfigs.SupplyCurrentLimit = 25;
+        currentLimitsConfigs.SupplyCurrentLimit = 40;
         currentLimitsConfigs.SupplyCurrentLimitEnable = false;
         FeedbackConfigs feedbackConfigs = new FeedbackConfigs(); 
         feedbackConfigs.FeedbackRemoteSensorID = mCANcoder.getDeviceID();

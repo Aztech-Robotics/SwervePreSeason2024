@@ -17,7 +17,6 @@ public class FollowPath extends CommandBase {
   public void initialize() {
     if (mDrive.isReadyForAuto()) {
       mDrive.setTrajectory(trajectory); 
-      System.out.println("Starting Trajectory with defined initial speeds");
     }
   }
 

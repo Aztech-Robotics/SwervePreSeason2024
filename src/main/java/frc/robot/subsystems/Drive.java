@@ -6,13 +6,15 @@ import com.pathplanner.lib.path.PathPlannerTrajectory;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.swerve.DriveMotionPlanner;
 import frc.lib.swerve.ModuleState;
-import frc.lib.swerve.SwerveDriveOdometry;
+import frc.lib.swerve.SwerveDriveKinematics;
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants;
 import frc.robot.ControlBoard;
@@ -37,6 +39,12 @@ public class Drive extends SubsystemBase {
   private DriveControlState mControlState = DriveControlState.None;
   private KinematicLimits mKinematicLimits = Constants.Drive.oneMPSLimits; 
   private DriveMotionPlanner mMotionPlanner; 
+  private SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
+    new Translation2d(Constants.Drive.wheel_base / 2.0, Constants.Drive.track_width / 2.0),
+    new Translation2d(Constants.Drive.wheel_base / 2.0, -Constants.Drive.track_width / 2.0),
+    new Translation2d(-Constants.Drive.wheel_base / 2.0, Constants.Drive.track_width / 2.0),
+    new Translation2d(-Constants.Drive.wheel_base / 2.0, -Constants.Drive.track_width / 2.0)
+  );
   private SwerveDriveOdometry mOdometry; 
   private boolean odometryReset = false; 
 
@@ -48,12 +56,12 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD3, 3)
     };
     pigeon.reset();
-    mOdometry = new SwerveDriveOdometry(Constants.Drive.swerveKinematics, getModulesStates()); 
-    outputTelemetry(); 
+    mOdometry = new SwerveDriveOdometry(Constants.Drive.swerveKinematics, new Rotation2d(), getModulesStates()); 
+    mMotionPlanner = new DriveMotionPlanner(); 
     for (SwerveModule module : swerveModules){
       module.outputTelemetry(); 
     }
-    mMotionPlanner = new DriveMotionPlanner(); 
+    outputTelemetry(); 
   }
 
   public static Drive getInstance () {
@@ -75,6 +83,7 @@ public class Drive extends SubsystemBase {
       new ModuleState()
     };
     ChassisSpeeds meas_chassis_speeds = new ChassisSpeeds(); 
+    Pose2d robot_pose = new Pose2d(); 
     //Outputs 
     DriveControlMode driveControlMode = DriveControlMode.Velocity; 
     ModuleState[] des_module_states = new ModuleState[] {
@@ -99,8 +108,8 @@ public class Drive extends SubsystemBase {
       module.readPeriodicInputs();
     }
     mPeriodicIO.meas_module_states = getModulesStates(); 
-    mPeriodicIO.meas_chassis_speeds = Constants.Drive.swerveKinematics.toChassisSpeeds(mPeriodicIO.meas_module_states);
-    mOdometry.update(mPeriodicIO.yawAngle, mPeriodicIO.meas_module_states);
+    mPeriodicIO.meas_chassis_speeds = swerveKinematics.toChassisSpeeds(mPeriodicIO.meas_module_states); 
+    mPeriodicIO.robot_pose = mOdometry.update(mPeriodicIO.yawAngle, mPeriodicIO.meas_module_states); 
   }
 
   public void writePeriodicOutputs () {
@@ -130,7 +139,7 @@ public class Drive extends SubsystemBase {
         }
       }
     } else if (mControlState == DriveControlState.PathFollowing) {
-      mPeriodicIO.des_chassis_speeds = mMotionPlanner.update(getPose(), mPeriodicIO.timestamp);
+      mPeriodicIO.des_chassis_speeds = mMotionPlanner.update(mPeriodicIO.robot_pose, mPeriodicIO.timestamp);
     }
     writePeriodicOutputs();
   }
@@ -157,7 +166,7 @@ public class Drive extends SubsystemBase {
         wanted_speeds.vyMetersPerSecond = (wanted_speeds.vyMetersPerSecond / velocity_magnitude) * mKinematicLimits.kMaxDriveVelocity;
       }
       ModuleState[] prev_module_states = mPeriodicIO.des_module_states.clone(); // Get last setpoint to get differentials
-      ChassisSpeeds prev_chassis_speeds = Constants.Drive.swerveKinematics.toChassisSpeeds(prev_module_states); 
+      ChassisSpeeds prev_chassis_speeds = swerveKinematics.toChassisSpeeds(prev_module_states); 
   
       double dx = wanted_speeds.vxMetersPerSecond - prev_chassis_speeds.vxMetersPerSecond;
       double dy = wanted_speeds.vyMetersPerSecond - prev_chassis_speeds.vyMetersPerSecond;
@@ -191,11 +200,11 @@ public class Drive extends SubsystemBase {
         prev_chassis_speeds.omegaRadiansPerSecond + domega * min_omega_scalar
       );
   
-      ModuleState[] real_module_setpoints = Constants.Drive.swerveKinematics.toModuleStates(wanted_speeds);
+      ModuleState[] real_module_setpoints = swerveKinematics.toModuleStates(wanted_speeds);
       mPeriodicIO.des_module_states = real_module_setpoints;
 
     } else if (mControlState == DriveControlState.PathFollowing) {
-      mPeriodicIO.des_module_states = Constants.Drive.swerveKinematics.toModuleStates(wanted_speeds); 
+      mPeriodicIO.des_module_states = swerveKinematics.toModuleStates(wanted_speeds); 
 
     } else if (mControlState == DriveControlState.ForceOrient) {
       mPeriodicIO.des_module_states = new ModuleState [] {
@@ -244,10 +253,6 @@ public class Drive extends SubsystemBase {
     pigeon.setYaw(angle); 
   }
 
-  public Rotation2d getYawAngle () {
-    return mPeriodicIO.yawAngle; 
-  }
-
   public void toggleDriveControl (){
     mPeriodicIO.driveControlMode = mPeriodicIO.driveControlMode == DriveControlMode.PercentOutput? 
     DriveControlMode.Velocity : DriveControlMode.PercentOutput; 
@@ -265,8 +270,7 @@ public class Drive extends SubsystemBase {
     for (SwerveModule module : swerveModules) {
       module.resetModule();
     }
-    mOdometry.resetPosition(getModulesStates(), pose);
-    setYawAngle(pose.getRotation().getDegrees()); 
+    mOdometry.resetPosition(mPeriodicIO.yawAngle, getModulesStates(), pose); 
     odometryReset = true; 
   }
 

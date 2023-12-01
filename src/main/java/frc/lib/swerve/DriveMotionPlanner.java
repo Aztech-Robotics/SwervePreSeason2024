@@ -44,13 +44,13 @@ public class DriveMotionPlanner {
     }
 
     public ChassisSpeeds update (Pose2d current_pose, double current_time){
-        ChassisSpeeds desired_ChassisSpeeds = null;
+        ChassisSpeeds desired_ChassisSpeeds = new ChassisSpeeds();
         if (currentTrajectory != null){
             if (startTime.isNaN()){
                 startTime = Timer.getFPGATimestamp();
             }
             double seconds = current_time - startTime;
-            PathPlannerTrajectory.State desired_state;
+            PathPlannerTrajectory.State desired_state; 
             if (seconds < currentTrajectory.getTotalTimeSeconds()){
                 desired_state = currentTrajectory.sample(seconds);
             } else {
