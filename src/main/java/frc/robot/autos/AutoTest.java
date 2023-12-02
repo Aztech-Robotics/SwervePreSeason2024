@@ -23,8 +23,8 @@ public class AutoTest implements IAuto {
 
     public AutoTest () {
         samplePath1 = PathPlannerPath.fromPathFile("SamplePath5"); 
-        samplePath2 = PathPlannerPath.fromPathFile("SamplePath2");
-        samplePath3 = PathPlannerPath.fromPathFile("SamplePath3");
+        samplePath2 = PathPlannerPath.fromPathFile("SamplePath2"); 
+        samplePath3 = PathPlannerPath.fromPathFile("SamplePath3"); 
         samplePath4 = PathPlannerPath.fromPathFile("SamplePath4"); 
         commSamplePath1 = new FollowPath(new PathPlannerTrajectory(samplePath1, new ChassisSpeeds())); 
         commSamplePath2 = new FollowPath(new PathPlannerTrajectory(samplePath2, new ChassisSpeeds())); 

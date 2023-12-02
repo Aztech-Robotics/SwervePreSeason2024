@@ -34,9 +34,9 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     IAuto autoSelected = Telemetry.autoChooser.getSelected(); 
     if (autoSelected != null) {
-      mDrive.setKinematicsLimits(Constants.Drive.autoLimits);
-      mDrive.resetOdometry(autoSelected.getStartingPose());
-      mAutonomousCommand = autoSelected.getAutoCommand();
+      mDrive.setKinematicsLimits(Constants.Drive.uncappedLimits);
+      mDrive.resetOdometry(autoSelected.getStartingPose()); 
+      mAutonomousCommand = autoSelected.getAutoCommand(); 
       mAutonomousCommand.schedule();
     }
   }
@@ -49,7 +49,7 @@ public class Robot extends TimedRobot {
     if (mAutonomousCommand != null) {
       mAutonomousCommand.cancel();
     }
-    mDrive.setKinematicsLimits(Constants.Drive.oneMPSLimits);
+    mDrive.setKinematicsLimits(Constants.Drive.oneMPSLimits); 
     mDrive.setDriveControlState(DriveControlState.TeleopControl); 
   }
 

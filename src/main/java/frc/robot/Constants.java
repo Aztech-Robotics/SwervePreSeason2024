@@ -46,7 +46,7 @@ public final class Constants {
         } 
         
         public static final KinematicLimits uncappedLimits = new KinematicLimits();
-        public static final KinematicLimits autoLimits = new KinematicLimits(3.5, 4, Math.PI, Math.PI); 
+        public static final KinematicLimits autoLimits = new KinematicLimits(3.5, 4, Math.PI, Math.PI);  
         public static final KinematicLimits oneMPSLimits = new KinematicLimits(2, Math.PI);  
 
         public static final double kp_x = 0;

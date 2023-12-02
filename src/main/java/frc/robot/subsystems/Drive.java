@@ -9,16 +9,16 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.swerve.DriveMotionPlanner;
 import frc.lib.swerve.ModuleState;
 import frc.lib.swerve.SwerveDriveKinematics;
+import frc.lib.swerve.SwerveDriveOdometry;
 import frc.lib.swerve.SwerveModule;
 import frc.robot.Constants;
 import frc.robot.ControlBoard;
-import frc.robot.Telemetry;
+import frc.robot.Telemetry; 
 import frc.robot.Constants.SwerveModules;
 import frc.robot.Constants.Drive.DriveControlMode;
 import frc.robot.Constants.Drive.KinematicLimits;
@@ -56,7 +56,7 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD3, 3)
     };
     pigeon.reset();
-    mOdometry = new SwerveDriveOdometry(Constants.Drive.swerveKinematics, new Rotation2d(), getModulesStates()); 
+    mOdometry = new SwerveDriveOdometry(swerveKinematics, getModulesStates()); 
     mMotionPlanner = new DriveMotionPlanner(); 
     for (SwerveModule module : swerveModules){
       module.outputTelemetry(); 
@@ -130,14 +130,6 @@ public class Drive extends SubsystemBase {
         ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity,
         mPeriodicIO.yawAngle
       );
-      if (mControlState == DriveControlState.HeadingControl) {
-        if (mMotionPlanner.isAtHeadingSetpoint()) {
-          mControlState = DriveControlState.TeleopControl; 
-        } else {
-          mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond = 
-          mMotionPlanner.calculateRotationalAdjustment(mPeriodicIO.heading_setpoint.getRadians(), mPeriodicIO.yawAngle.getRadians());
-        }
-      }
     } else if (mControlState == DriveControlState.PathFollowing) {
       mPeriodicIO.des_chassis_speeds = mMotionPlanner.update(mPeriodicIO.robot_pose, mPeriodicIO.timestamp);
     }
@@ -270,7 +262,8 @@ public class Drive extends SubsystemBase {
     for (SwerveModule module : swerveModules) {
       module.resetModule();
     }
-    mOdometry.resetPosition(mPeriodicIO.yawAngle, getModulesStates(), pose); 
+    setYawAngle(pose.getRotation().getDegrees());
+    mOdometry.resetPosition(getModulesStates(), pose); 
     odometryReset = true; 
   }
 
