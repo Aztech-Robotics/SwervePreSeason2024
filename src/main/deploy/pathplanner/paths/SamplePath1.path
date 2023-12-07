@@ -8,53 +8,56 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 3.0000000000000004,
-        "y": 8.0
+        "x": 3.9999999999999996,
+        "y": 5.0
       },
       "isLocked": false
     },
     {
       "anchor": {
-        "x": 7.0,
-        "y": 5.0
+        "x": 5.0,
+        "y": 4.0
       },
       "prevControl": {
-        "x": 7.0,
-        "y": 7.999999999999999
+        "x": 5.0,
+        "y": 5.0
+      },
+      "nextControl": {
+        "x": 5.0,
+        "y": 3.0
+      },
+      "isLocked": false
+    },
+    {
+      "anchor": {
+        "x": 3.0,
+        "y": 3.0
+      },
+      "prevControl": {
+        "x": 4.0,
+        "y": 3.0
       },
       "nextControl": null,
       "isLocked": false
     }
   ],
   "rotationTargets": [],
-  "constraintZones": [
-    {
-      "name": "DriftingAtTheBeginning",
-      "minWaypointRelativePos": 0,
-      "maxWaypointRelativePos": 0.1,
-      "constraints": {
-        "maxVelocity": 4.0,
-        "maxAcceleration": 4.0,
-        "maxAngularVelocity": 360.0,
-        "maxAngularAcceleration": 30.0
-      }
-    }
-  ],
+  "constraintZones": [],
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.5,
     "maxAcceleration": 4.0,
     "maxAngularVelocity": 360.0,
-    "maxAngularAcceleration": 90.0
+    "maxAngularAcceleration": 180.0
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -115.0
+    "rotation": 0.0
   },
   "reversed": false,
   "folder": null,
   "previewStartingState": {
-    "rotation": 90.0,
+    "rotation": 0.0,
     "velocity": 0
   }
 }

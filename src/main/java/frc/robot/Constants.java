@@ -10,8 +10,8 @@ public final class Constants {
     public static double kLooperDt = 0.02; 
     public static class Drive {
         public static final int id_pigeon = 13;
-        public static final double track_width = Units.inchesToMeters(25); 
-        public static final double wheel_base = Units.inchesToMeters(25); 
+        public static final double track_width = 0.57; 
+        public static final double wheel_base = 0.57; 
         public static final SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
             new Translation2d(wheel_base / 2.0, track_width / 2.0),
             new Translation2d(wheel_base / 2.0, -track_width / 2.0),
@@ -47,19 +47,15 @@ public final class Constants {
         
         public static final KinematicLimits uncappedLimits = new KinematicLimits();
         public static final KinematicLimits autoLimits = new KinematicLimits(3.5, 4, Math.PI, Math.PI);  
-        public static final KinematicLimits oneMPSLimits = new KinematicLimits(2, Math.PI);  
+        public static final KinematicLimits oneMPSLimits = new KinematicLimits(3, Math.PI);  
 
-        public static final double kp_x = 0;
-        public static final double ki_x = 0;
-        public static final double kd_x = 0;
+        public static final double kp_translational = 0;
+        public static final double ki_translational = 0;
+        public static final double kd_translational = 0;
         
-        public static final double kp_y = 0;
-        public static final double ki_y = 0;
-        public static final double kd_y = 0;
-
-        public static final double kp_theta = 0;
+        public static final double kp_theta = 4.75;
         public static final double ki_theta = 0;
-        public static final double kd_theta = 0; 
+        public static final double kd_theta = 0.11; 
 
         public static final double kp_snap = 0;
         public static final double ki_snap = 0;
@@ -73,13 +69,13 @@ public final class Constants {
 
         public static final SwerveModuleConstants MOD0 = new SwerveModuleConstants(1, 2, 3, 33);
         public static final SwerveModuleConstants MOD1 = new SwerveModuleConstants(4, 5, 6, 42.5);
-        public static final SwerveModuleConstants MOD2 = new SwerveModuleConstants(7, 8, 9, 87.2); 
+        public static final SwerveModuleConstants MOD2 = new SwerveModuleConstants(7, 8, 9, 83.6); 
         public static final SwerveModuleConstants MOD3 = new SwerveModuleConstants(10, 11, 12, 0); 
 
-        public static final double steer_kP = 1.25;
+        public static final double steer_kP = 1.28;
         public static final double steer_kI = 0.5; //0.155 .5
-        public static final double steer_kD = 0.02;
-        public static final double steer_kS = 0.2;
+        public static final double steer_kD = 0;
+        public static final double steer_kS = 0.5;
         public static final double steer_kV = 0;
         
         public static final double drive_kP = 1.82e-4;

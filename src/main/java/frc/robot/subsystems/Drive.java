@@ -4,18 +4,27 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.path.PathPlannerTrajectory;
 
+import edu.wpi.first.math.MatBuilder;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.lib.swerve.DriveMotionPlanner;
 import frc.lib.swerve.ModuleState;
 import frc.lib.swerve.SwerveDriveKinematics;
-import frc.lib.swerve.SwerveDriveOdometry;
+import frc.lib.swerve.SwerveDriveOdometry; 
+import frc.lib.swerve.SwerveDrivePoseEstimator;
 import frc.lib.swerve.SwerveModule;
+import frc.lib.vision.LimelightHelpers;
 import frc.robot.Constants;
 import frc.robot.ControlBoard;
 import frc.robot.Telemetry; 
@@ -38,15 +47,16 @@ public class Drive extends SubsystemBase {
   }
   private DriveControlState mControlState = DriveControlState.None;
   private KinematicLimits mKinematicLimits = Constants.Drive.oneMPSLimits; 
-  private DriveMotionPlanner mMotionPlanner; 
   private SwerveDriveKinematics swerveKinematics = new SwerveDriveKinematics(
     new Translation2d(Constants.Drive.wheel_base / 2.0, Constants.Drive.track_width / 2.0),
     new Translation2d(Constants.Drive.wheel_base / 2.0, -Constants.Drive.track_width / 2.0),
     new Translation2d(-Constants.Drive.wheel_base / 2.0, Constants.Drive.track_width / 2.0),
     new Translation2d(-Constants.Drive.wheel_base / 2.0, -Constants.Drive.track_width / 2.0)
-  );
-  private SwerveDriveOdometry mOdometry; 
+  ); 
+  private SwerveDrivePoseEstimator mOdometry; 
+  private DriveMotionPlanner mMotionPlanner; 
   private boolean odometryReset = false; 
+  private PIDController snapController = new PIDController(3.5, 0, 0);
 
   private Drive() {
     swerveModules = new SwerveModule[] {
@@ -56,11 +66,17 @@ public class Drive extends SubsystemBase {
       new SwerveModule(SwerveModules.MOD3, 3)
     };
     pigeon.reset();
-    mOdometry = new SwerveDriveOdometry(swerveKinematics, getModulesStates()); 
+    mOdometry = new SwerveDrivePoseEstimator(
+      swerveKinematics, getModulesStates(), new Pose2d(), 
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0, 0, 0), 
+      new MatBuilder<>(Nat.N3(), Nat.N1()).fill(0, 0, 0)
+    ); 
     mMotionPlanner = new DriveMotionPlanner(); 
     for (SwerveModule module : swerveModules){
       module.outputTelemetry(); 
     }
+    snapController.enableContinuousInput(-Math.PI, Math.PI);
+    snapController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
     outputTelemetry(); 
   }
 
@@ -77,10 +93,10 @@ public class Drive extends SubsystemBase {
     Rotation2d yawAngle = new Rotation2d(); 
     double yaw_velocity = 0; 
     ModuleState[] meas_module_states = new ModuleState [] {
-      new ModuleState(),
-      new ModuleState(),
-      new ModuleState(),
-      new ModuleState()
+      new ModuleState(), 
+      new ModuleState(), 
+      new ModuleState(), 
+      new ModuleState() 
     };
     ChassisSpeeds meas_chassis_speeds = new ChassisSpeeds(); 
     Pose2d robot_pose = new Pose2d(); 
@@ -110,6 +126,10 @@ public class Drive extends SubsystemBase {
     mPeriodicIO.meas_module_states = getModulesStates(); 
     mPeriodicIO.meas_chassis_speeds = swerveKinematics.toChassisSpeeds(mPeriodicIO.meas_module_states); 
     mPeriodicIO.robot_pose = mOdometry.update(mPeriodicIO.yawAngle, mPeriodicIO.meas_module_states); 
+    if (getTagId() != -1) {
+      mOdometry.addVisionMeasurement(LimelightHelpers.getBotPose2d("limelight"), 
+      Timer.getFPGATimestamp() - (LimelightHelpers.getLatency_Pipeline("limelight")/1000.0) - (LimelightHelpers.getLatency_Capture("limelight")/1000.0));
+    }
   }
 
   public void writePeriodicOutputs () {
@@ -130,6 +150,17 @@ public class Drive extends SubsystemBase {
         ControlBoard.getRightXC0().getAsDouble() * mKinematicLimits.kMaxAngularVelocity,
         mPeriodicIO.yawAngle
       );
+      if (mControlState == DriveControlState.HeadingControl) {
+        if (snapController.getSetpoint() != mPeriodicIO.heading_setpoint.getRadians()) {
+          snapController.setSetpoint(mPeriodicIO.heading_setpoint.getRadians()); 
+          snapController.reset();
+        }
+        if (Math.abs(mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond) > Math.PI / 2) {
+          mControlState = DriveControlState.TeleopControl; 
+        } else { 
+          mPeriodicIO.des_chassis_speeds.omegaRadiansPerSecond = snapController.calculate(mPeriodicIO.yawAngle.getRadians()); 
+        }
+      }
     } else if (mControlState == DriveControlState.PathFollowing) {
       mPeriodicIO.des_chassis_speeds = mMotionPlanner.update(mPeriodicIO.robot_pose, mPeriodicIO.timestamp);
     }
@@ -268,7 +299,7 @@ public class Drive extends SubsystemBase {
   }
 
   public Pose2d getPose () {
-    return mOdometry.getPoseMeters(); 
+    return mOdometry.getEstimatedPosition(); 
   }
 
   public boolean isReadyForAuto () {
@@ -289,8 +320,16 @@ public class Drive extends SubsystemBase {
     mControlState = DriveControlState.HeadingControl; 
   }
 
+  public int getTagId () {
+    return (int)LimelightHelpers.getFiducialID("limelight"); 
+  }
+
   public void outputTelemetry (){
-    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees()).withPosition(8, 0); 
-    Telemetry.swerveTab.addDouble("Yaw Angular Velocity", () -> mPeriodicIO.yaw_velocity).withPosition(9, 0);
+    ShuffleboardLayout robot_pose = Telemetry.swerveTab.getLayout("Robot Pose", BuiltInLayouts.kList).withSize(2, 3).withPosition(8, 0);
+    robot_pose.addDouble("X", () -> mPeriodicIO.robot_pose.getX());
+    robot_pose.addDouble("Y", () -> mPeriodicIO.robot_pose.getY());
+    robot_pose.addDouble("Theta", () -> mPeriodicIO.robot_pose.getRotation().getDegrees());
+    Telemetry.swerveTab.addDouble("Yaw Angle", () -> mPeriodicIO.yawAngle.getDegrees()).withPosition(0, 3); 
+    Telemetry.swerveTab.addInteger("Tag ID", () -> getTagId()).withPosition(1, 3); 
   }
 }

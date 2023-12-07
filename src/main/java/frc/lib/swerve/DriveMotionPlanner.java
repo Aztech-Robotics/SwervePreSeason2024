@@ -5,36 +5,24 @@ import com.pathplanner.lib.path.PathPlannerTrajectory;
 import com.pathplanner.lib.util.PIDConstants;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.Constants;
 
 public class DriveMotionPlanner {    
     private final PPHolonomicDriveController driveController = new PPHolonomicDriveController(
-        new PIDConstants(0), new PIDConstants(5.9,0, 0),  
-        Constants.Drive.maxVelocity, Math.hypot(Constants.Drive.wheel_base, Constants.Drive.track_width)
+        new PIDConstants(Constants.Drive.kp_translational), 
+        new PIDConstants(Constants.Drive.kp_theta, Constants.Drive.ki_theta, Constants.Drive.kd_theta),  
+        Constants.Drive.maxVelocity, Math.hypot(Constants.Drive.wheel_base, Constants.Drive.track_width)/2
     ); 
-    private final PIDController snapController = new PIDController(
-        Constants.Drive.kp_snap, Constants.Drive.ki_snap, Constants.Drive.kd_snap
-    );
     private PathPlannerTrajectory currentTrajectory; 
     private Double startTime;
     private boolean isTrajectoryFinished = false;
 
     public DriveMotionPlanner () {}
-
-    public double calculateRotationalAdjustment(double target_heading, double current_heading) {
-        if (snapController.getSetpoint() != target_heading) {
-            snapController.reset();
-            snapController.setSetpoint(target_heading);
-        }
-        return snapController.calculate(current_heading, target_heading);
-    }
-
-    public boolean isAtHeadingSetpoint () {
-        return snapController.atSetpoint(); 
-    }
 
     public void setTrajectory (PathPlannerTrajectory trajectory, Pose2d current_pose, ChassisSpeeds current_speeds){
         currentTrajectory = trajectory; 

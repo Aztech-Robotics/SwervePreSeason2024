@@ -52,7 +52,6 @@ public class SwerveDrivePoseEstimator {
    * meters for x, 0.9 meters for y, and 0.9 radians for heading.
    *
    * @param kinematics A correctly-configured kinematics object for your drivetrain.
-   * @param gyroAngle The current gyro angle.
    * @param modulePositions The current distance measurements and rotations of the swerve modules.
    * @param initialPoseMeters The starting pose estimate.
    */
@@ -70,7 +69,6 @@ public class SwerveDrivePoseEstimator {
    * Constructs a SwerveDrivePoseEstimator.
    *
    * @param kinematics A correctly-configured kinematics object for your drivetrain.
-   * @param gyroAngle The current gyro angle.
    * @param modulePositions The current distance and rotation measurements of the swerve modules.
    * @param initialPoseMeters The starting pose estimate.
    * @param stateStdDevs Standard deviations of the pose estimate (x position in meters, y position
@@ -131,12 +129,10 @@ public class SwerveDrivePoseEstimator {
    * <p>The gyroscope angle does not need to be reset in the user's robot code. The library
    * automatically takes care of offsetting the gyro angle.
    *
-   * @param gyroAngle The angle reported by the gyroscope.
    * @param modulePositions The current distance measurements and rotations of the swerve modules.
    * @param poseMeters The position on the field that your robot is at.
    */
-  public void resetPosition(
-    Rotation2d gyroAngle, SwerveModulePosition[] modulePositions, Pose2d poseMeters) {
+  public void resetPosition(SwerveModulePosition[] modulePositions, Pose2d poseMeters) {
     // Reset state estimate and error covariance
     m_odometry.resetPosition(modulePositions, poseMeters);
     m_poseBuffer.clear();
