@@ -4,11 +4,8 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathPlannerTrajectory;
 import com.pathplanner.lib.util.PIDConstants;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.Constants;
 
@@ -34,7 +31,7 @@ public class DriveMotionPlanner {
     public ChassisSpeeds update (Pose2d current_pose, double current_time){
         ChassisSpeeds desired_ChassisSpeeds = new ChassisSpeeds(); 
         if (currentTrajectory != null){ 
-            if (startTime.isNaN()){
+            if (startTime.isNaN()){     
                 startTime = Timer.getFPGATimestamp();
             }
             double seconds = current_time - startTime; 

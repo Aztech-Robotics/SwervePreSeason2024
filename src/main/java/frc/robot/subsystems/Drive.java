@@ -7,13 +7,11 @@ import com.pathplanner.lib.path.PathPlannerTrajectory;
 import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -56,7 +54,7 @@ public class Drive extends SubsystemBase {
   private SwerveDrivePoseEstimator mOdometry; 
   private DriveMotionPlanner mMotionPlanner; 
   private boolean odometryReset = false; 
-  private PIDController snapController = new PIDController(3.5, 0, 0);
+  private PIDController snapController = new PIDController(3.5, 0, 0); 
 
   private Drive() {
     swerveModules = new SwerveModule[] {
@@ -76,7 +74,7 @@ public class Drive extends SubsystemBase {
       module.outputTelemetry(); 
     }
     snapController.enableContinuousInput(-Math.PI, Math.PI);
-    snapController.setTolerance(Rotation2d.fromDegrees(5).getRadians());
+    snapController.setTolerance(Rotation2d.fromDegrees(2).getRadians());
     outputTelemetry(); 
   }
 
@@ -231,10 +229,10 @@ public class Drive extends SubsystemBase {
 
     } else if (mControlState == DriveControlState.ForceOrient) {
       mPeriodicIO.des_module_states = new ModuleState [] {
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0),
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0),
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0),
-        ModuleState.fromSpeeds(Rotation2d.fromDegrees(0), 0)
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(-45), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(45), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(45), 0),
+        ModuleState.fromSpeeds(Rotation2d.fromDegrees(-45), 0)
       };
     }
   }
